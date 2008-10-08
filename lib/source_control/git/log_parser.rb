@@ -33,7 +33,7 @@ module SourceControl
         key, value = match[1,2]
 
         case key
-        when 'commit' then @id = value[0, 5]
+        when 'commit' then @id = value.strip
         when 'author' then parse_author(value)
         else  # ignore other keys
         end
