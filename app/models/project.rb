@@ -452,9 +452,9 @@ class Project
     
     dry_build_lable = "(#{build_index})#{revision_number}"
     
-    case related_builds
-    when [] then dry_build_lable
-    when [dry_build_lable] then "#{dry_build_lable}.1"
+    case related_builds.size
+    when 0 then dry_build_lable
+    when 1 then "#{dry_build_lable}.1"
     else
       rebuild_numbers = related_builds.map { |label| label.split('.')[1] }.compact
       last_rebuild_number = rebuild_numbers.sort_by { |x| x.to_i }.last 
