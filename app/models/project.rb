@@ -297,6 +297,7 @@ class Project
     previous_build = last_build    
     
     build = Build.new(self, create_build_label(revision.number))
+    puts "build label is #{build.label}"
     
     begin
       log_changeset(build.artifacts_directory, reasons)
@@ -436,31 +437,33 @@ class Project
   
   # sorts a array of builds in order of revision number and rebuild number 
   def order_by_label(builds)
-    if source_control.creates_ordered_build_labels?
-      builds.sort_by do |build|
-        number, rebuild = build.label.split('.')
-        # when a label only has build number, rebuild = nil, nil.to_i = 0, and this code still works
-        [number.to_i, rebuild.to_i]
-      end
-    else
-      builds.sort_by(&:time)
+    builds.sort_by do |build|
+      build.label =~ /^\((\d+)\).*$/
+      $1.to_i
     end
   end
     
   def create_build_label(revision_number)
     revision_number = revision_number.to_s
     build_labels = builds.map { |b| b.label }
-    related_builds_pattern = Regexp.new("^#{Regexp.escape(revision_number)}(\\.\\d+)?$")
+    related_builds_pattern = Regexp.new("^\\(\\d+\\)#{Regexp.escape(revision_number)}(\\.\\d+)?$")
     related_builds = build_labels.select { |label| label =~ related_builds_pattern }
-
+    build_index = last_build_index + 1
+    
+    dry_build_lable = "(#{build_index})#{revision_number}"
+    
     case related_builds
-    when [] then revision_number
-    when [revision_number] then "#{revision_number}.1"
+    when [] then dry_build_lable
+    when [dry_build_lable] then "#{dry_build_lable}.1"
     else
       rebuild_numbers = related_builds.map { |label| label.split('.')[1] }.compact
       last_rebuild_number = rebuild_numbers.sort_by { |x| x.to_i }.last 
-      "#{revision_number}.#{last_rebuild_number.next}"
+      "#{dry_build_lable}.#{last_rebuild_number.next}"
     end
+  end
+  
+  def last_build_index
+    builds.size
   end
   
   def create_build_requested_flag_file
